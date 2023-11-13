@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "skipLibCheck": true,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "ES6",
+    "sourceMap": true,
+    "declaration": true,
+    "outDir": "build",
+    "strict": true
+  },
+  "include": ["src/**/*"]
+}

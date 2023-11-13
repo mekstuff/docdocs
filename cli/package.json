@@ -1,0 +1,52 @@
+{
+  "name": "@mekstuff/docdocs",
+  "version": "1.0.0",
+  "author": "mekstuff <contact@mekstuff.com> (https://github.com/mekstuff)",
+  "license": "MIT",
+  "type": "module",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
+  "bin": {
+    "docdocs": "build/index.js"
+  },
+  "scripts": {
+    "prepack": "yarn tsc"
+  },
+  "files": [
+    "build",
+    "templates"
+  ],
+  "dependencies": {
+    "@mekstuff/logreport": "file:.lpm\\@mekstuff\\logreport@1.0.0--7cfe09b622-da4ef6",
+    "boxen": "^7.1.1",
+    "chokidar": "^3.5.3",
+    "commander": "^10.0.1",
+    "pluralize": "^8.0.0",
+    "typedoc": "^0.25.2",
+    "@mekstuff/docdocs-front-end": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.2.5",
+    "@types/pluralize": "^0.0.32",
+    "@typescript-eslint/eslint-plugin": "^5.60.1",
+    "@typescript-eslint/parser": "^5.60.1",
+    "eslint": "^8.43.0",
+    "eslint-config-prettier": "^8.8.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "prettier": "^2.8.8",
+    "typescript": "^5.1.3",
+    "vitepress": "^1.0.0-rc.22"
+  },
+  "local": {
+    "dependencies": {
+      "@mekstuff/logreport": [
+        "^1.0.0",
+        "import",
+        "traverse-imports"
+      ]
+    }
+  },
+  "peerDependencies": {
+    "vitepress": "^1.0.0-rc.22"
+  }
+}
