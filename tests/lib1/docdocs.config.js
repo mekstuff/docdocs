@@ -1,22 +1,35 @@
 // https://mekstuff.github.io/docdocs/configuration
-import { Config } from "@mekstuff/docdocs";
+import { Config, GetDefaultConfigValue } from "@mekstuff/docdocs";
+
 // prettier-ignore
 export default Config({
-    DocumentationVersions: {
-        current: "1.0.0",
-        previous: [
-            {text: "0.0.5", link: "/0.0.5"}
-        ]
-    },
     ViteUserConfig: {
+        ...GetDefaultConfigValue("ViteUserConfig"),
         themeConfig: {
-            footer: {
-                message: "Hello",
-                copyright: "WTF",
-            }
+            nav: [
+                { text: "Guide", link: "/GettingStarted/hello"},
+              ],
+            //   sidebar: `$!{ generateSidebar([
+            //     {
+            //         documentRootPath: '/',
+            //         resolvePath: '/',
+            //         useTitleFromFileHeading: true,
+            //         excludeFolders: ['api', 'node_modules']
+            //     },
+            //     {
+            //         documentRootPath: 'api',
+            //         resolvePath: '/api/',
+            //         useTitleFromFrontmatter: true,
+            //     }
+            //   ]) }!`
         }
+    },
+    ApiReference: {
+        ...GetDefaultConfigValue("ApiReference"),
+        // noApiSidebar: true,
+    },
+    ViteTheme: {
+        // packages: ["vitepress-sidebar"],
+        // config_import: [{p: "generateSidebar", from: "vitepress-sidebar", default: false}]
     }
-    // tsconfig: string;
-    // ViteUserConfig: UserConfig;
-    // ...
 })

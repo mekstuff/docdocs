@@ -19,6 +19,7 @@
     "access": "public"
   },
   "devDependencies": {
+    "@mekstuff/docdocs": "workspace:*",
     "@rbxts/compiler-types": "^2.1.0-types.1",
     "@rbxts/types": "^1.0.723",
     "@typescript-eslint/eslint-plugin": "^6.8.0",
@@ -28,8 +29,6 @@
     "eslint-plugin-prettier": "^5.0.1",
     "eslint-plugin-roblox-ts": "^0.0.36",
     "prettier": "^3.0.3",
-    "typescript": "^5.2.2",
-    "@mekstuff/docdocs": "workspace:*"
-  },
-  "dependencies": {}
+    "typescript": "^5.2.2"
+  }
 }

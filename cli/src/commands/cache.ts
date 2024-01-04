@@ -3,6 +3,9 @@ import { Console } from "@mekstuff/logreport";
 import { program as CommanderProgrammer } from "commander";
 import { GetDocDocsRootCacheDirectory } from "../utils/core.js";
 
+/**
+ *
+ */
 export default function CacheCommand(program: typeof CommanderProgrammer) {
   const cacheCommand = program.command("cache");
 

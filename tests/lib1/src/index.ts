@@ -1,25 +1,46 @@
-/**
- * This is class 1
- */
-export class ClassOne {
+export class Test {
 	/**
-	 * Some docs about ClassOne.OneProperty
+	 * display `this` inline along with `this part`
+	 * ```ts
+	 * const x = true;
+	 * ```
+	 *
+	 * WTF `lo`
+	 *
+	 * ``lol``
 	 */
-	OneProperty: string | number = "Hello World";
-	constructor(Loop: string | number) {}
+	test: string = "";
+
+	/**
+	 * @param param0 This part does that part
+	 * @returns Hello world
+	 */
+	test2(param0: string, param1: number): string | undefined {
+		return;
+	}
+}
+export class Test2 {
+	/**
+	 * display `this` inline along with `this part`
+	 * ```ts
+	 * const x = true;
+	 * ```
+	 *
+	 * WTF `lo`
+	 *
+	 * ``lol``
+	 */
+	test: string = "";
+
+	/**
+	 * @param param0 This part does that part
+	 * @returns Hello world
+	 */
+	test2(param0: string, param1: number): string | undefined {
+		return;
+	}
 }
 
-// export class ClassTwo extends ClassOne {}
-
-export function FuncOne(Arg0: number, Arg1: string, Arg2: number | string, Arg3?: unknown): string | number | unknown {
-	return 1;
-}
-
-export function FuncTwo<T extends string>(Arg0: T): Promise<T> {
-	return new Promise(() => {});
-}
-
-export interface InterfaceOne {
-	InterfaceOneProp0: string | number;
-	InterfaceOneProp1: boolean;
+export function Hello(): Instance {
+	return undefined as never;
 }

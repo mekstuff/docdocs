@@ -10,16 +10,19 @@ import {
   LoadDocDocsConfig,
 } from "../utils/core.js";
 import { Console } from "@mekstuff/logreport";
-import {
+import BuildVitePressTemplate, {
   CopyCustomComponentsIntoThemeAtDirectory,
   CopyDDTemplateComponentsIntoThemeAtDirectory,
   CreateIndexHomePageAtDir,
+  CreateTeamMembersPageAtDirectory,
   LoadDocsFromEntryToDirectory,
   WriteDefaultIndexForVitePressThemeAtDirectory,
 } from "../utils/vitepress-template-builder.js";
 import { CompileViteUserConfig } from "../utils/vite-config.js";
 import { transpileProject } from "../utils/transpiler.js";
-import BootstrapTypedoc from "../utils/typedoc-bootstrap.js";
+import BootstrapTypedoc, {
+  SetTypeDocProject,
+} from "../utils/typedoc-bootstrap.js";
 import { execSync } from "child_process";
 import { GetPreferredBinExecuteablePM } from "../utils/get-preferred-package-manager.js";
 import { ProjectReflection } from "typedoc";
@@ -35,19 +38,16 @@ type BuildOptions = {
 export function BuildAndTranspileProject(
   directory: string,
   project: ProjectReflection,
-  options?: {
+  options: {
     /**
-     * Initializing the ViteUserConfig will cause the page to reload, in cases of serve its best to not reload on every save.
-     * Instead watch for change in anything related to configuration first.
+     * The docdocs.config.[ext] file changed
      */
-    NoCompilationOfViteUserConfig?: boolean;
-    /**
-     * Initialize the `tsdoc.json` will cause the page to reload.
-     */
-    NoInitializationOfTsDocConfig?: boolean;
+    ViteUserConfigChanged: boolean;
+    TsDocConfigurationChanged: boolean;
   }
 ) {
   options = options ?? {};
+  BuildVitePressTemplate(directory);
   // copies the dd-vue-components to theme, must run before vitepresstheme index creation since the index creation writes the components that this function creates
   CopyDDTemplateComponentsIntoThemeAtDirectory(directory);
   // copies the custom-vue-components to theme, must run before vitepresstheme index creation since the index creation writes the components that this function creates
@@ -58,11 +58,13 @@ export function BuildAndTranspileProject(
   // loads docs from the path of the `DocEntry`
   LoadDocsFromEntryToDirectory(directory);
 
-  if (!options.NoCompilationOfViteUserConfig) {
+  if (options.ViteUserConfigChanged) {
     // Reads the `DocDoc` config and applies it to the `ViteConfig`
     CompileViteUserConfig(directory);
+    // create team-page if specified
+    CreateTeamMembersPageAtDirectory(directory);
   }
-  if (!options.NoInitializationOfTsDocConfig) {
+  if (options.TsDocConfigurationChanged) {
     // Writes to the `tsdoc.json` file.
     InitializeTsDocConfig(process.cwd());
   }
@@ -72,6 +74,9 @@ export function BuildAndTranspileProject(
   transpileProject(project, directory);
 }
 
+/**
+ *
+ */
 export default function BuildCommand(program: typeof CommanderProgrammer) {
   program
     .command("build")
@@ -88,6 +93,7 @@ export default function BuildCommand(program: typeof CommanderProgrammer) {
         Console.error("Could not convert typedoc app. project unresolved.");
         process.exit(1);
       }
+      SetTypeDocProject(project);
       const BuildId = crypto.randomBytes(20).toString("hex");
       if (options.cache === true) {
         // if we are using cache, then search from the project in cache. If there then copy it and rename it to the `build id`.
@@ -102,11 +108,16 @@ export default function BuildCommand(program: typeof CommanderProgrammer) {
         }
       }
       const build = CreateNewDocDocsCacheProject(BuildId);
-      BuildAndTranspileProject(build, project);
+      BuildAndTranspileProject(build, project, {
+        TsDocConfigurationChanged: true,
+        ViteUserConfigChanged: true,
+      });
 
       // build vitepress
       execSync(
-        `${GetPreferredBinExecuteablePM()} vitepress build --outDir=${BuildId}`,
+        `${
+          GetPreferredBinExecuteablePM(build).bin
+        } vitepress build --outDir=${BuildId}`,
         {
           cwd: build,
           stdio: "inherit",

@@ -1,5 +1,7 @@
 import TypeDoc from "typedoc";
 import { GetDocDocsConfig } from "../utils/core.js";
+import { sup } from "../markdown-components/sup.js";
+import { linebreak } from "../markdown-components/linebreak.js";
 /**
  * Markdown of a source link reflection.
  */
@@ -28,12 +30,13 @@ export function SourceLinkDefinedInNode(
     ? `${
         reflection.sources
           ? reflection.sources
-              .map(
-                (x) =>
-                  // `defined in <a target="_blank" href="#">${x.fullFileName}</a>`
-                  `<sup><sup>Defined in <a href="#">${x.fullFileName}:${x.line}:${x.character}</a></sup></sup>`
+              .map((x) =>
+                sup(
+                  `Defined in <a href="#">${x.fullFileName}:${x.line}:${x.character}</a>`,
+                  2
+                )
               )
-              .join("\n")
+              .join(linebreak())
           : ""
       }`
     : "";

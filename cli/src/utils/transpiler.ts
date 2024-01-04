@@ -9,6 +9,7 @@ import {
   AddToApiRoute,
   GetDocDocsConfig,
   GetSubApiRoute,
+  RemoveApiRoute,
   SupportedApiRoutes,
 } from "./core.js";
 import path from "path";
@@ -19,9 +20,13 @@ import {
 } from "./vite-config.js";
 import InterfaceNode from "../markdown-nodes/InterfaceNode.js";
 import { TypeAliasNode } from "../markdown-nodes/TypeNode.js";
+import { ReferenceDocDocsConfigurationPath } from "../configuration.js";
 
 /**
  * Log a conflict between sources.
+ *
+  transpiler
+ *
  */
 export function GetLogForSourceConflict(
   ...Sources: (TypeDoc.SourceReference[] | undefined)[]
@@ -39,14 +44,26 @@ export function GetLogForSourceConflict(
 }
 
 /**
+ * Resolves the name of the reflection for path use, e.g. `/` will be replaced with `_` at it will be lowercased.
+ *
+  transpiler
+ */
+export function ResolveReflectionNameForPathUrl(name: string): string {
+  return name.replace(/\//g, "_").toLowerCase();
+}
+
+/**
  * Transpile a group of reflections by type.
+ *
+  transpiler
  */
 function transpileGroupedReflections(
   Reflections: TypeDoc.Models.Reflection[],
   directory: string,
   GroupType: SupportedApiRoutes,
   /* eslint-disable @typescript-eslint/no-explicit-any */
-  TargetNode: (...args: any) => any
+  TargetNode: (...args: any) => any,
+  transpilerLogger: ReturnType<Console["Log"]>
 ) {
   const GroupInDir = GetSubApiRoute(directory, GroupType);
   if (GroupInDir !== undefined) {
@@ -70,7 +87,6 @@ function transpileGroupedReflections(
       }
     });
   }
-  const TranspilerLog = Console.log(``);
   const reflectionNameEntries: {
     name: string;
     sourceRef: TypeDoc.SourceReference[] | undefined;
@@ -90,12 +106,13 @@ function transpileGroupedReflections(
         Console.LOG(`^^^ Fix conflicts and try building again ^^^\n\n`);
         process.exit(1);
       }
-      const parsedNameForApi = path.parse(x.name).name; // parse name since we do not want directories in name, so nested files nest/index.ts will just be /index.ts
+      // const parsedNameForApi =  path.parse(x.name).name; // parse name since we do not want directories in name, so nested files nest/index.ts will just be /index.ts
+      const parsedNameForApi = ResolveReflectionNameForPathUrl(x.name);
       reflectionNameEntries.push({
         name: parsedNameForApi,
         sourceRef: x.sources,
       });
-      TranspilerLog(`Transpiling ${GroupType} ${x.name}`);
+      transpilerLogger(`Transpiling ${GroupType} ${x.name}`);
       AddToApiRoute(
         directory,
         GroupType,
@@ -105,100 +122,138 @@ function transpileGroupedReflections(
       );
     }
   });
-  TranspilerLog(
-    `Transpiled ${Reflections.length} ${Pluralize(
-      GroupType,
-      Reflections.length
-    )}.`
-  );
+  // transpilerLogger(
+  //   `Transpiled ${Reflections.length} ${Pluralize(
+  //     GroupType,
+  //     Reflections.length
+  //   )}.`
+  // );
 }
 
 /**
  * Entry transpiler for project reflection.
+ *
+  transpiler
  */
 export function transpileProject(
   project: TypeDoc.Models.ProjectReflection,
   directory: string
 ) {
   const DDConfig = GetDocDocsConfig();
-  if (DDConfig.ApiReference.NoApiReference === true) {
+  if (DDConfig.ApiReference.noApiReference === true) {
+    RemoveApiRoute(directory);
     return;
   }
 
-  const ClassReflections = project.getReflectionsByKind(
-    TypeDoc.Models.ReflectionKind.Class
-  );
-  transpileGroupedReflections(ClassReflections, directory, "class", ClassNode);
+  const excludeReflection = (t: SupportedApiRoutes) => {
+    const exc = DDConfig.ApiReference.exclude;
+    if (exc === undefined) {
+      return false;
+    }
+    return exc.indexOf(t) === -1 ? false : true;
+  };
 
-  const FunctionReflections = project.getReflectionsByKind(
-    TypeDoc.Models.ReflectionKind.Function
+  const transpilerStatusLog = Console.log("");
+
+  const ClassReflections = excludeReflection("class")
+    ? []
+    : project.getReflectionsByKind(TypeDoc.Models.ReflectionKind.Class);
+  transpileGroupedReflections(
+    ClassReflections,
+    directory,
+    "class",
+    ClassNode,
+    transpilerStatusLog
   );
+
+  const FunctionReflections = excludeReflection("function")
+    ? []
+    : project.getReflectionsByKind(TypeDoc.Models.ReflectionKind.Function);
   transpileGroupedReflections(
     FunctionReflections,
     directory,
     "function",
-    FunctionNode
+    FunctionNode,
+    transpilerStatusLog
   );
 
-  const InterfaceReflections = project.getReflectionsByKind(
-    TypeDoc.Models.ReflectionKind.Interface
-  );
+  const InterfaceReflections = excludeReflection("interface")
+    ? []
+    : project.getReflectionsByKind(TypeDoc.Models.ReflectionKind.Interface);
   transpileGroupedReflections(
     InterfaceReflections,
     directory,
     "interface",
-    InterfaceNode
+    InterfaceNode,
+    transpilerStatusLog
   );
 
-  const TypeAliasReflections = project.getReflectionsByKind(
-    TypeDoc.Models.ReflectionKind.TypeAlias
-  );
+  const TypeAliasReflections = excludeReflection("type")
+    ? []
+    : project.getReflectionsByKind(TypeDoc.Models.ReflectionKind.TypeAlias);
   transpileGroupedReflections(
     TypeAliasReflections,
     directory,
     "type",
-    TypeAliasNode
+    TypeAliasNode,
+    transpilerStatusLog
   );
 
-  const ModuleReflections = project.getReflectionsByKind(
-    TypeDoc.Models.ReflectionKind.Module
-  );
+  const ModuleReflections = excludeReflection("module")
+    ? []
+    : project.getReflectionsByKind(TypeDoc.Models.ReflectionKind.Module);
   transpileGroupedReflections(
     ModuleReflections,
     directory,
     "module",
-    ModuleNode
+    ModuleNode,
+    transpilerStatusLog
   );
 
   //create api reference navigation
-  if (ClassReflections.length > 0) {
-    let ApiConfigLinkText: string | undefined =
-      DDConfig.ApiReference.NavigationLinkText;
-    if (ApiConfigLinkText === "") {
-      Console.warn(
-        "An empty string cannot be used as the ApiNavigationLinkText"
-      );
-      ApiConfigLinkText = undefined;
-    }
-    // Get the first api link that is used when selecting `Api Reference` anchor.
-    const apiEntryLink =
-      ModuleReflections.length > 0
-        ? `/api/module/${ModuleReflections[0].name.toLowerCase()}`
-        : ClassReflections.length > 0
-        ? `/api/class/${ClassReflections[0].name.toLowerCase()}`
-        : FunctionReflections.length > 0
-        ? `/api/function/${FunctionReflections[0].name.toLowerCase()}`
-        : InterfaceReflections.length > 0
-        ? `/api/interface/${InterfaceReflections[0].name.toLowerCase()}`
-        : TypeAliasReflections.length > 0
-        ? `/api/type/${TypeAliasReflections[0].name.toLowerCase()}`
-        : "";
-    AddNavLinkToViteUserConfig(directory, {
-      link: apiEntryLink,
-      activeMatch: "/api/",
-      text: ApiConfigLinkText ?? "Api Reference",
-    });
+  let ApiConfigLinkText: string | undefined =
+    DDConfig.ApiReference.navigationLinkText;
+  if (ApiConfigLinkText === "") {
+    Console.warn(
+      `An empty string cannot be used as the ${ReferenceDocDocsConfigurationPath(
+        "ApiReference.navigationLinkText"
+      )}`
+    );
+    ApiConfigLinkText = undefined;
   }
+  // Get the first api link that is used when selecting `Api Reference` anchor.
+  const apiEntryLink =
+    ModuleReflections.length > 0
+      ? `/api/module/${ModuleReflections[0].name.toLowerCase()}`
+      : ClassReflections.length > 0
+      ? `/api/class/${ClassReflections[0].name.toLowerCase()}`
+      : FunctionReflections.length > 0
+      ? `/api/function/${FunctionReflections[0].name.toLowerCase()}`
+      : InterfaceReflections.length > 0
+      ? `/api/interface/${InterfaceReflections[0].name.toLowerCase()}`
+      : TypeAliasReflections.length > 0
+      ? `/api/type/${TypeAliasReflections[0].name.toLowerCase()}`
+      : "";
+
+  AddNavLinkToViteUserConfig(directory, {
+    link: apiEntryLink,
+    activeMatch: "/api/",
+    text: ApiConfigLinkText ?? "Api Reference",
+  });
+
+  const _getTranspiledText = (content: unknown[], name: SupportedApiRoutes) => {
+    return content.length + " " + Pluralize(name, content.length);
+  };
+
+  transpilerStatusLog(
+    `Transpiled ${[
+      _getTranspiledText(ClassReflections, "class"),
+      _getTranspiledText(FunctionReflections, "function"),
+      _getTranspiledText(InterfaceReflections, "interface"),
+      _getTranspiledText(TypeAliasReflections, "type"),
+      _getTranspiledText(ModuleReflections, "module"),
+    ].join(", ")}`
+  );
 
   // resolve the api sidebar for the `/api/` route.
   ResolveApiSidebar(directory, {

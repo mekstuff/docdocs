@@ -1,27 +1,80 @@
 import TypeDoc from "typedoc";
 import { UserConfig } from "vitepress";
+import { SupportedApiRoutes } from "./utils/core.js";
 
+/**
+ *
+ */
+export type package_import_statemnets = (
+  | string
+  | { p: string; from: string; default?: boolean }
+)[];
 export interface DocDocsConfiguration {
-  /**
-   * Path of `tsconfig.json` file relative to the current working directory.
-   */
-  tsconfig: string;
-
   /**
    * Configure TypeDoc options, learn more [https://typedoc.org/api/interfaces/Configuration.TypeDocOptions.html](https://typedoc.org/api/interfaces/Configuration.TypeDocOptions.html)
    *
    * Do not edit unless you're certain what you're changing.
+   *
+   * The entryPoints default to `["src/**"]`
    */
   TypeDocOptions: Partial<TypeDoc.Configuration.TypeDocOptions>;
 
   /**
    * Learn more [https://vitepress.dev/reference/site-config](https://vitepress.dev/reference/site-config)
+   *
+   * Defaults with a title and a local search provider
    */
   ViteUserConfig: UserConfig;
 
   // DocDocs Configuration
   /**
+   * Setup how links for external reference types are resolved.
+   *
+   * By default, there's support for roblox-ts "compiler-types" and "types".
+   */
+  TypeNodeReferenceTypeLinkResolver: Record<
+    string,
+    /**
+     * @returns The url.
+     */
+    (type: {
+      /**
+       * The name of the package where the Reference is from
+       * e.g. `@rbxts/types`
+       */
+      package: string;
+      /**
+       * The name fo the type.
+       */
+      name: string;
+      /**
+       * The `file` name of which the reference is from.
+       */
+      fileName: string;
+    }) => string
+  >;
+  /**
+   * If `true`, if a reflection has `example` tags, they will be listed inside of a collapsed codeblock at the end of
+   * the node.
+   */
+  DisplayCodeBlockExamplesAtEndOfNode?: boolean;
+  // /**
+  //  * Configure the sidebar behaviour for your docs
+  //  */
+  // DocsSidebar: {
+  //   /**
+  //    * Automatically generate the sidebar.
+  //    *
+  //    * `dir` - generates sidebar based on the directory/file structure. ( default )
+  //    *
+  //    * `false` - does not automatically generate sidebar.
+  //    *
+  //    */
+  //   automatic: "dir" | false;
+  // };
+  /**
    * Configure and customize the `.vitepress/theme.index.js` file that is automatically generated.
+   * Also contains configuration for the `.vitepress/config.js` file for non json configurations.
    */
   ViteTheme?: {
     /**
@@ -32,7 +85,7 @@ export interface DocDocsConfiguration {
      * A list packages that will be imported at the top of the file.
      * This should be used for importing styles and themes.
      */
-    import?: (string | { p: string; from: string; default?: boolean })[];
+    import?: package_import_statemnets;
     /**
      * Executable source that will be placed after imports and before export.
      */
@@ -45,27 +98,17 @@ export interface DocDocsConfiguration {
      * Executable source that will be placed at the bottom of the `enhanceApp` function, you have access to the `ctx` variable.
      */
     enhance?: string;
+    /**
+     * A list of packagtes that will be imported at the top of the `.vitepress/config.js` file
+     */
+    config_import?: package_import_statemnets;
   };
-
-  /**
-   * Learn more from the enhanceApp function exported.
-   * @example
-   * import { Config, enhanceApp } from "@mekstuff/docdocs";
-   *
-   * Config({
-   * ...
-   * enhanceApp({...})
-   * })
-   */
-  // enhanceApp?: enhancedDocDocsVitePressApplication;
-
-  // ViteTheme?: string | string[];
 
   /**
    * Creates a `dropdown` navigation showing the current version and links the the previous versions.
    *
    * For older versions, inside your `docs/` (or custom docs directory), you will place the compiled older version
-   * into a dedicated folder, if you're version as "v1", "v2", etc... You will create a new folder called `v1` and place
+   * into a dedicated folder, if you're versioning as "v1", "v2", etc... You will create a new folder called `v1` and place
    * old docs into that folder and create a new `previous` version with href "/v1".
    *
    * By default previous links `link` will be `/[text]`.
@@ -85,26 +128,63 @@ export interface DocDocsConfiguration {
     /**
      * Does not create any api reference, (Does not create documentation from your source code.)
      */
-    NoApiReference?: boolean;
+    noApiReference?: boolean;
+    /**
+     * Disables creating the sidebar, You may need to enable this when using packages that auto generate sidebars.
+     */
+    noApiSidebar?: boolean;
+    /**
+     * Excludes the type of declaration reflections from the sidebar.
+     */
+    exclude?: SupportedApiRoutes[];
     /**
      * The text of the navigation link for api
      *
      * defaults to `Api Reference`
      */
-    NavigationLinkText?: string;
+    navigationLinkText?: string;
 
     /**
      * Configure the sidebar for /api/ route
      */
-    SidebarConfiguration: {
+    sidebarConfiguration: {
       /**
        * How the api sidebar will be categorized
        *
-       * Hybrid:
-       * default - Categorizes by the type, e.g, Classes/Functions/Interfaces...
-       * tag - Categorizes by the `@ddapi` tag of the reflection.
+       * `sibling` - Sorts by the type of reflection, e.g. Class, Function, etc.
+       *
+       * `dir` - Sorts by the directory at which they're in. `dir-1` will sort by one directory up, `dir-2` by to levels up, etc. Use `dir-[number]` to specify a specific directory level.
        */
-      Categorize: "hybrid";
+      categorize: "sibling" | "dir-1" | "dir-2" | "dir-3" | `dir-[${number}]`;
+      /**
+       * This function will be called forEach side bar configuration entry that is about to be added.
+       *
+       * @returns The string you return will be used as the "Category" in which the reflection will be placed.
+       * If you return a string beginning with `$`. It will instead have the reflection use the categorize method that you specified.
+       * e.g. $sibling will make it use the "sibling" category behaviour.
+       * Returning `undefined` will have it proceed with normal categorize method.
+       */
+      forEach?: (reflection: {
+        name: string;
+        route: SupportedApiRoutes;
+        ddapi: string | undefined;
+        isDeprecated: boolean;
+        sources: {
+          fileName: string;
+          fullFileName: string;
+          /**
+           * The `fullFileName` path relative to the current working directory.
+           */
+          relativePath: string;
+          /**
+           * The relative "directory"  of the "relativePath"
+           */
+          relativeDirectory: string;
+        }[];
+      }) =>
+        | `$${DocDocsConfiguration["ApiReference"]["sidebarConfiguration"]["categorize"]}`
+        | string
+        | undefined;
     };
   };
 
@@ -122,18 +202,45 @@ export interface DocDocsConfiguration {
      * that do not require Sponsor.
      */
     emoji?: string;
+    /**
+     * if `true`, a badge will not be displayed inline. This can be used if you want to display a `contentBlock` but not
+     * cloud the inline badges
+     */
+    noBadge?: boolean;
+    /**
+     * If the FlagNode has the tag, if you specify a contentBlock, it will be placed on the next line following the inline tags.
+     */
     contentBlock?: {
       type: "info" | "tip" | "warning" | "danger";
-      title?: string;
-      content: unknown;
+      title?:
+        | string
+        | ((
+            tag: TypeDoc.Models.CommentTag,
+            tagContentAsString: string
+          ) => string);
+      /**
+       * If the tag already has content, it will always use that content over this content UNLESS this is a function.
+       */
+      content?:
+        | ((
+            tag: TypeDoc.Models.CommentTag,
+            tagContentAsString: string
+          ) => NonNullable<unknown>)
+        | symbol
+        | string
+        | object;
     };
   }[];
   /**
-   * The path of your doc entries
+   * The path of your doc entries.
+   *
+   * defaults to `./docs`
    */
   DocsEntry: string;
   /**
    * The output path where building docs will be created.
+   *
+   * defaults to `./docs/dist`
    */
   DocsBuildOutput: string;
   /**
@@ -172,16 +279,47 @@ export interface DocDocsConfiguration {
       rel?: string;
     }[];
   };
+  /**
+   * Quickly setup a team page to display and credit your team members.
+   */
+  TeamPageConfiguration?: {
+    /**
+     * List of your team members.
+     */
+    teamMembers: {
+      avatar?: string;
+      name?: string;
+      title?: string;
+      links?: { icon?: string; link: string }[];
+    }[];
+    /**
+     * The heading that will be at the top of the team page.
+     *
+     * defaults to `Our Team`
+     */
+    teamPageHeader?: string;
+    /**
+     * The text that will be below the heading of the team page.
+     *
+     * defaults to `_`
+     */
+    teamPageLead?: string;
+    /**
+     * The `Route` url of the team page.
+     *
+     * defaults to `./team.md`
+     */
+    teamPageRoute?: string;
+  };
 }
 
 export const DefaultConfiguration: DocDocsConfiguration = {
   // external and third parties
-  tsconfig: "./tsconfig.json",
   TypeDocOptions: {
     entryPoints: ["src/**"],
   },
   ViteUserConfig: {
-    title: "DocsDocs Website",
+    title: "DocDocs Website",
     themeConfig: {
       search: {
         provider: "local",
@@ -189,23 +327,38 @@ export const DefaultConfiguration: DocDocsConfiguration = {
     },
   },
   // internal
+  TypeNodeReferenceTypeLinkResolver: {
+    "@rbxts/types": (type) => {
+      console.log(type);
+      return "https://roblox.com";
+    },
+    "@rbxts/compiler-types": (type) => {
+      if (type.name === "Promise") {
+        return "https://www.eryn.io/roblox-lua-promise";
+      }
+      return "https://roblox-ts.com";
+    },
+  },
+  DisplayCodeBlockExamplesAtEndOfNode: true,
+  // DocsSidebar: {
+  //   automatic: "dir",
+  // },
+  ViteTheme: undefined,
+  DocumentationVersions: undefined,
   LinkToReflectionSource: true,
   ApiReference: {
-    NoApiReference: false,
-    NavigationLinkText: "Api Reference",
-    SidebarConfiguration: {
-      Categorize: "hybrid",
+    noApiReference: false,
+    exclude: undefined,
+    navigationLinkText: "Api Reference",
+    sidebarConfiguration: {
+      categorize: "sibling",
+      forEach: undefined,
     },
   },
   CommentTagBadges: [
-    {
-      tag: "@readonly",
-      emoji: "📖",
-    },
+    { tag: "@readonly", emoji: "📖" },
     { tag: "@private", emoji: "🔒" },
     { tag: "@secured", emoji: "🔐" },
-    { tag: "@server", emoji: "🖥️" },
-    { tag: "@client", emoji: "💻" },
     {
       tag: "@async",
       emoji: "⚠️",
@@ -215,9 +368,30 @@ export const DefaultConfiguration: DocDocsConfiguration = {
         content: "",
       },
     },
-    { tag: "@yields", emoji: "✋" },
-    { tag: "@deprecated", emoji: "⚠️" },
-    { tag: "@const", emoji: "❗" },
+    {
+      tag: "@deprecated",
+      emoji: "⚠️",
+      contentBlock: {
+        type: "danger",
+        title: "⚠️ Deprecated",
+        content:
+          "This feature is deprecated and should not be used in new work.",
+      },
+    },
+    {
+      tag: "@since",
+      emoji: "",
+      noBadge: true,
+      contentBlock: {
+        type: "warning",
+        title: (_, content) => {
+          if (!content) {
+            return "You need to specify @since [when] if you're using the default @since tag! e.g. @since 1.2.0";
+          }
+          return `This feature is available only in version ${content} or higher.`;
+        },
+      },
+    },
   ],
   DocsEntry: "./docs",
   DocsBuildOutput: "./docs/dist",
@@ -253,12 +427,41 @@ export const DefaultConfiguration: DocDocsConfiguration = {
       },
       {
         icon: "❤️",
-        title: "Sponsors Only",
+        title: "Support DocDocs",
         details:
-          "There will always be a free open-source version of docdocs that is more than sufficient for documenting your packages, But for more added features and customizability, have a look at our sponsors only version ❤️",
-        link: "https://github.com/mekstuff/docdocs/sponsor",
-        linkText: "Become a sponsor",
+          "DocDocs is an open source project, You can support it by making contributions to the development or through donations of any amount! Using DocDocs in itself is already a form of support so we thank you ❤️",
+        link: "https://github.com/mekstuff/docdocs",
+        linkText: "Contribute to DocDocs",
       },
     ],
   },
+  TeamPageConfiguration: undefined,
 };
+
+type PathImpl<T, K extends keyof T> = K extends string
+  ? T[K] extends Record<string, unknown>
+    ? T[K] extends ArrayLike<unknown>
+      ? K | `${K}.${PathImpl<T[K], Exclude<keyof T[K], keyof unknown[]>>}`
+      : K | `${K}.${PathImpl<T[K], keyof T[K]>}`
+    : K
+  : never;
+
+type Path<T> = PathImpl<T, keyof T> | keyof T;
+
+/**
+ * type safely reference a configuration path during runtime.
+ */
+export function ReferenceDocDocsConfigurationPath(
+  path:
+    | Path<
+        Omit<
+          DocDocsConfiguration,
+          "ViteUserConfig" | "TypeDocOptions" | "tsconfig"
+        >
+      >
+    | "ViteUserConfig"
+    | "TypeDocOptions"
+    | "tsconfig"
+): string {
+  return `"docdocs.config.[ext].${path}"`;
+}

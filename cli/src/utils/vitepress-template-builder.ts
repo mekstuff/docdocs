@@ -9,24 +9,219 @@ import {
 import { ExpectsInVitePressDirectory } from "./vite-config.js";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
-import { DocDocsConfiguration } from "../configuration.js";
 import { GetPreferredBinExecuteablePM } from "./get-preferred-package-manager.js";
+import {
+  ReferenceDocDocsConfigurationPath,
+  package_import_statemnets,
+} from "../configuration.js";
+import { h2 } from "../markdown-components/heading.js";
+import { admonition } from "../markdown-components/admonition.js";
+import { anchor } from "../markdown-components/anchor.js";
+import {
+  linebreak,
+  linebreakWithDashes,
+} from "../markdown-components/linebreak.js";
 
 /**
- * Builds out a vitepress project with dependencies
+ * Creates a `team` page if specified.
+ */
+export function CreateTeamMembersPageAtDirectory(directory: string) {
+  const DDConfig = GetDocDocsConfig();
+  if (DDConfig.TeamPageConfiguration !== undefined) {
+    const CompilingTeamPage = Console.log("Compiling team page...");
+    Console.assert(
+      DDConfig.TeamPageConfiguration.teamMembers,
+      `${ReferenceDocDocsConfigurationPath(
+        "TeamPageConfiguration"
+      )} members were not specified!`
+    );
+    fs.writeFileSync(
+      path.join(
+        directory,
+        DDConfig.TeamPageConfiguration.teamPageRoute ?? "./team.md"
+      ),
+      `---
+layout: page
+---
+<script setup>
+import {
+  VPTeamPage,
+  VPTeamPageTitle,
+  VPTeamMembers
+} from "vitepress/theme";
+
+const members = [
+  ${DDConfig.TeamPageConfiguration.teamMembers
+    .map(
+      (member) =>
+        `{avatar: "${member.avatar ?? ""}",
+name: "${member.name ?? ""}",
+title: "${member.title ?? ""}",
+${
+  member.links
+    ? `links: [${member.links
+        .map((link) => `{icon: "${link.icon ?? ""}", link: "${link.link}"}`)
+        .join(",")}]`
+    : ""
+}
+}`
+    )
+    .join(",")}
+]
+
+</script>
+
+<VPTeamPage>
+  <VPTeamPageTitle>
+    <template #title>
+      ${DDConfig.TeamPageConfiguration.teamPageHeader ?? "Our Team"}
+    </template>
+    <template #lead>
+      ${DDConfig.TeamPageConfiguration.teamPageLead ?? "_"}
+    </template>
+  </VPTeamPageTitle>
+  <VPTeamMembers
+    :members="members"
+  />
+</VPTeamPage>
+      `
+    );
+    CompilingTeamPage("Team page compiled.");
+  }
+}
+
+/**
+ * Builds out a vitepress project with dependencies and copies the needed `package.json` fields
+ * from the cwd to the target directory if any.
  */
 export default function BuildVitePressTemplate(directory: string) {
-  if (!fs.existsSync(path.join(directory, "package.json"))) {
-    fs.writeFileSync(
-      path.join(directory, "package.json"),
-      JSON.stringify(VitePressTemplate_PKGJSON, undefined, 2),
-      "utf-8"
-    );
+  let DataToWrite = VitePressTemplate_PKGJSON as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  const packageJSONAtCwd = path.join(process.cwd(), "package.json");
+  const dirpjson = path.join(directory, "package.json");
+
+  const prevpackageJSON = fs.existsSync(dirpjson)
+    ? JSON.parse(fs.readFileSync(dirpjson, "utf-8"))
+    : undefined;
+
+  if (prevpackageJSON) {
+    DataToWrite = { ...prevpackageJSON, ...DataToWrite };
   }
+
+  if (fs.existsSync(packageJSONAtCwd)) {
+    try {
+      const _pjson = JSON.parse(fs.readFileSync(packageJSONAtCwd, "utf-8"));
+      const dataWeCopy = ["name", "version", "author", "license", "type"];
+      dataWeCopy.forEach((d) => {
+        const has = _pjson[d];
+        if (has === undefined) {
+          return;
+        }
+        DataToWrite[d] = has;
+      });
+    } catch (err) {
+      Console.warn(
+        `Failed to read from "${packageJSONAtCwd}" when building vitepress template.`
+      );
+    }
+  }
+  const dataString = JSON.stringify(DataToWrite, undefined, 2);
+
+  if (fs.existsSync(dirpjson)) {
+    if (fs.readFileSync(dirpjson, "utf-8") === dataString) {
+      // same data, no write, no install.
+      return;
+    }
+  }
+  fs.writeFileSync(dirpjson, dataString, "utf-8");
   Console.log("Installing dependencies...");
   execSync("yarn", { cwd: directory, stdio: "inherit" }); // TODO: Get preferred package manager.
 }
 
+/**
+ * Maps the valid files as a tree that can be used for automatic sidebars
+ *
+ * Note that validFiles are looped backwards, meaning that the file at index [0] should be the last file.
+ *
+function MapValidFilesAsTree(
+  validFiles: string[],
+  directory: string,
+  initialPath: string
+) {
+  type _item = {
+    children: _item[];
+    name: string;
+  };
+  const Root: _item = {
+    name: "root",
+    children: [],
+  };
+  for (let index = validFiles.length - 1; index >= 0; index--) {
+    const file = validFiles[index];
+    // const filePaths = file;
+    const targetDir = path.join(
+      directory,
+      path.parse(path.relative(initialPath, file)).dir
+    );
+    const fileDir =
+      targetDir === directory
+        ? "/"
+        : targetDir.split(directory)[1].replace(/\\/g, "/");
+
+    if (fileDir === "/") {
+      const alreadyInRootDir = Root.children.find((f) => f.name === "/");
+      if (alreadyInRootDir) {
+        alreadyInRootDir.children.push({
+          name: file,
+          children: [],
+        });
+      } else {
+        Root.children.push({
+          name: "/",
+          children: [{ name: file, children: [] }],
+        });
+      }
+    } else {
+      const fileDirPaths = fileDir.split("/");
+      let _lastitemPath: _item | undefined;
+      fileDirPaths.forEach((path, index) => {
+        if (index === 0) {
+          return;
+        }
+        console.log("fz");
+        if (_lastitemPath === undefined) {
+          console.log("fe");
+          const pathInRoot = Root.children.find((f) => (f.name = path));
+          console.log(pathInRoot === undefined, pathInRoot);
+          if (pathInRoot) {
+            _lastitemPath = pathInRoot;
+          } else {
+            console.log("adding path to root ", path);
+            _lastitemPath = {
+              name: path,
+              children: [],
+            };
+            Root.children.push(_lastitemPath);
+          }
+        }
+        if (index === fileDirPaths.length - 1) {
+          // if (!_lastitemPath) {
+          //   Console.error(
+          //     "There was an error when mapping file directories as tree. the `_lastitemPath` was not defined."
+          //   );
+          //   return;
+          // }
+          // _lastitemPath.children.push({
+          //   name: file,
+          //   children: [],
+          // });
+        }
+      });
+    }
+  }
+  console.log("---JSON BELOW---");
+  console.log(JSON.stringify(Root));
+}
+*/
 /**The default `package.json` source for vitepress directory*/
 const VitePressTemplate_PKGJSON = {
   name: "@mekstuff/docdocs-vitepress-template",
@@ -50,13 +245,20 @@ export function LoadDocsFromEntryToDirectory(directory: string) {
       const stats = fs.lstatSync(rootPath);
       if (stats.isDirectory()) {
         fs.readdirSync(rootPath).forEach((x) => {
+          if (initialPath === rootPath) {
+            if (x === "api" && ddconfig.ApiReference.noApiReference !== true) {
+              Console.error(
+                `You cannot create an "api/" directory within your docs while having ${ReferenceDocDocsConfigurationPath(
+                  "ApiReference.noApiReference"
+                )} set to false.`
+              );
+            }
+          }
           if (x === ".components") {
             // custom components are ignored and loaded with `CopyCustomComponentsIntoThemeAtDirectory`
             return;
-            // LoadDirectoryOfCustomComponents(path.join(rootPath, x));
-          } else {
-            recursiveGetFiles(path.join(rootPath, x));
           }
+          recursiveGetFiles(path.join(rootPath, x));
         });
       } else {
         const parsed = path.parse(rootPath);
@@ -71,6 +273,8 @@ export function LoadDocsFromEntryToDirectory(directory: string) {
           );
         }
         // Do not remove, prevents conflict between auto build index.md and user added. Use configuration to change home page.
+        /* Not needed anymore since files are copied as docs/index.md -> docs/index.md instead of docs/index.md -> index.md
+         */
         if (rel === "index.md" || rel === "index.html") {
           Console.error(
             `You cannot create an index.md file at the root level, Home pages are created through docdocs configuration.`
@@ -97,6 +301,7 @@ export function LoadDocsFromEntryToDirectory(directory: string) {
     // recursive copy, we need to make nested files have there parent directories created on the arg0 directory.
     const targetDir = path.join(
       directory,
+      // ddconfig.DocsEntry, // route to the DocEntry, so if doc entry is `/docs`  then output should be inside of a `/docs` folder and not the root of the directory.
       path.parse(path.relative(initialPath, x)).dir
     );
     if (!fs.existsSync(targetDir)) {
@@ -104,6 +309,7 @@ export function LoadDocsFromEntryToDirectory(directory: string) {
     }
     fs.cpSync(x, path.join(targetDir, path.parse(x).base));
   });
+
   DocsCompilerLog("Docs Compiled.");
 }
 
@@ -253,12 +459,16 @@ export function WriteDefaultIndexForVitePressThemeAtDirectory(
 
 /**
  * Installs the themes to the directory using a package manager.
+ * TODO: If x is installed then we added y to packages it doesn't seem to detect the enw y, Fi
+ * ^^ happened with ["vitepress-sidebar", "vitepress-shopware-docs"] where the 2nd one was added after.
+ *
+ * TODO: They're not installed in package.json, maybe since we write to the package json everytime now! fix.
  */
 function InstallUserSpecifiedThemes(
   directory: string,
   theme: string[] | undefined
 ) {
-  const _PM = GetPreferredBinExecuteablePM();
+  const _PM = GetPreferredBinExecuteablePM(directory);
   const themeCacheInfoPath = path.join(
     directory,
     ".docdocs-vite-theme-info.json"
@@ -288,7 +498,7 @@ function InstallUserSpecifiedThemes(
   if (NoLongerUsedThemes.length > 0) {
     Console.info(`Uninstalling previous themes: ${NoLongerUsedThemes.join()}`);
     try {
-      execSync(`${_PM} remove ${NoLongerUsedThemes.join(" ")}`, {
+      execSync(`${_PM.remove} ${NoLongerUsedThemes.join(" ")}`, {
         stdio: "inherit",
         cwd: directory,
       });
@@ -299,7 +509,7 @@ function InstallUserSpecifiedThemes(
   if (theme) {
     Console.info(`Installing themes: ${theme.join()}`);
     try {
-      execSync(`${_PM} add ${theme.join(" ")}`, {
+      execSync(`${_PM.add} ${theme.join(" ")}`, {
         stdio: "inherit",
         cwd: directory,
       });
@@ -323,7 +533,6 @@ const DEFAULT_THEME_EXTEND_REGISTER_GLOBAL_COMPONENTS = (
   directory: string
 ): string => {
   const DDConfig = GetDocDocsConfig();
-
   InstallUserSpecifiedThemes(directory, DDConfig.ViteTheme?.packages);
   // TODO: Components name validation: only allow characters[A-Z]
   const ddComponentsPath = path.join(viteThemeDirectory, "dd-components");
@@ -389,15 +598,7 @@ ${
   DDConfig.ViteTheme
     ? DDConfig.ViteTheme.import
       ? `// user-imports
-${DDConfig.ViteTheme.import
-  .map((x) =>
-    typeof x === "string"
-      ? `import "${x}";`
-      : `import ${!x.default ? "{" : ""} ${x.p} ${
-          !x.default ? "}" : ""
-        } from "${x.from}"`
-  )
-  .join("\n")}`
+${_compileImportStatements(DDConfig.ViteTheme.import)}`
       : ""
     : ""
 }
@@ -412,6 +613,7 @@ ${DDConfig.ViteTheme.source}`
 // dd-components
 ${importComponentsString}
 export default {
+  extends: DefaultTheme, // this is placed at that top so any other extends: will override it.
   ${
     DDConfig.ViteTheme
       ? DDConfig.ViteTheme.export
@@ -420,7 +622,6 @@ ${DDConfig.ViteTheme.export.map((x) => x).join(",\n")},`
         : ""
       : ""
   }
-  extends: DefaultTheme,
   enhanceApp(ctx) {
     // dd-components
     ${registerComponentsString}
@@ -437,11 +638,71 @@ ${DDConfig.ViteTheme.export.map((x) => x).join(",\n")},`
   `;
 };
 
+export function _compileImportStatements(imports: package_import_statemnets) {
+  return imports
+    .map((x) =>
+      typeof x === "string"
+        ? `import "${x}";`
+        : `import ${!x.default ? "{" : ""} ${x.p} ${
+            !x.default ? "}" : ""
+          } from "${x.from}"` + ";"
+    )
+    .join("\n");
+}
+
 /**
  * Default getting started markdown source
  */
-const DEFAULT_GETTING_STARTED_MD = `
-# Getting Started
+const DEFAULT_GETTING_STARTED_MD = `# Getting Started
 
-Learn more idiot.
+${admonition(
+  "This file is automatically generated and only exists whenever you have no files within your `" +
+    ReferenceDocDocsConfigurationPath("DocsEntry") +
+    "` directory.",
+  "warning"
+)}
+
+
+${h2("What is DocDocs")}
+
+\`DocDocs\` is a \`cli\` tool that enables developers to generate ${anchor(
+  "vitepress",
+  "https://www.vitepress.dev",
+  "_blank"
+)} documentation websites from source code. It uses ${anchor(
+  "TypeDoc",
+  "https://typedoc.org/",
+  "_blank"
+)} from the typescript team to extract documentations from your \`classes/functions/interfaces etc.\`
+${linebreak()}
+This is just a brief overview of \`DocDocs\`, For in depth documentation and examples check out the ${anchor(
+  "website",
+  "docdocs.mekstuff.com",
+  "_blank"
+)}.
+
+${h2("Contribute To DocDocs")}
+DocDocs is an open source project, you can contribute by reporting bugs, writing code, optimizing code, etc. on github! ${anchor(
+  "DocDocs Github Repository",
+  "https://github.com/mekstuff/docdocs",
+  "_blank"
+)}
+
+You can also contribute by following our socials ${anchor(
+  "@mekstuff",
+  "https://twitter.com/mekstuff",
+  "_blank"
+)} and checking out our ${anchor(
+  "projects",
+  "https://github.com/mekstuff",
+  "_blank"
+)}!
+
+Want to donate to us? ${anchor(
+  "Donate",
+  "https://ko-fi.com/mekstuff",
+  "_blank"
+)}.
+${linebreakWithDashes()}
+Made with ❤️ by mekstuff
 `;

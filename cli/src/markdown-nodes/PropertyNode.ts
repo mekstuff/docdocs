@@ -4,6 +4,10 @@ import FlagsNode from "./FlagsNode.js";
 import TypeNode from "./TypeNode.js";
 import InheritedFromNode from "./InheritedFromNode.js";
 import { SourceLinkDefinedInNode } from "./SourceLinkNode.js";
+import { page } from "../markdown-components/page.js";
+import { h3 } from "../markdown-components/heading.js";
+import { admonition } from "../markdown-components/admonition.js";
+import ExampleBlockNode from "./ExampleBlockNode.js";
 
 /**
  * Markdown of a class reflection.
@@ -11,20 +15,33 @@ import { SourceLinkDefinedInNode } from "./SourceLinkNode.js";
 export default function PropertyNode(
   reflection: TypeDoc.Models.DeclarationReflection
 ): string {
-  return `### ${reflection.name} ${
-    reflection.flags ? FlagsNode(reflection.flags, reflection.comment) : ""
-  }
+  const IsOptional =
+    (reflection.flags.find((x) => x === "Optional") && true) || false;
 
-:::tip ${reflection.parent?.name + "." + reflection.name}: ${
-    reflection.type ? TypeNode(reflection.type) : "UNRESOLVED TYPE"
-  } 
-
-  ${reflection.defaultValue ? `( Defaults to ${reflection.defaultValue} )` : ""}
-  ${reflection.inheritedFrom ? InheritedFromNode(reflection.inheritedFrom) : ""}
-  :::
-
-${reflection.comment ? CommentNode(reflection.comment) : ""}
-
-${SourceLinkDefinedInNode(reflection)}
-`;
+  return page(
+    [h3(reflection.name + (IsOptional ? "?" : "")), FlagsNode(reflection)],
+    [
+      admonition(
+        page(
+          reflection.defaultValue
+            ? [`( Defaults to ${reflection.defaultValue} )`]
+            : [],
+          reflection.inheritedFrom
+            ? [InheritedFromNode(reflection.inheritedFrom)]
+            : []
+        ),
+        "tip",
+        reflection.parent?.name +
+          "." +
+          reflection.name +
+          `${IsOptional ? "?" : ""}: ` +
+          (reflection.type
+            ? TypeNode(reflection.type, undefined, true)
+            : "UNRESOLVED TYPE")
+      ),
+    ],
+    reflection.comment ? [CommentNode(reflection.comment)] : [],
+    [ExampleBlockNode(reflection.comment)],
+    [SourceLinkDefinedInNode(reflection)]
+  );
 }

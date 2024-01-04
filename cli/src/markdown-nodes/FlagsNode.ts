@@ -4,6 +4,10 @@ import TypeDoc from "typedoc";
 import { GetDocDocsConfig } from "../utils/core.js";
 import { Console } from "@mekstuff/logreport";
 import { DocDocsConfiguration } from "../configuration.js";
+import { page } from "../markdown-components/page.js";
+import { admonition } from "../markdown-components/admonition.js";
+import { CommentTagContentDisplayPartNode } from "./CommentNode.js";
+import { linebreak } from "../markdown-components/linebreak.js";
 
 /**
  * Removes `@` from the start of the tag if any and makes the tag lowerCase
@@ -50,40 +54,97 @@ function GetFlagNodeBadge(
 /**
  * Makrdown of flag reflections
  *
+ * FlagsNode are expected to be placed inline with a heading, e.g. properties and methods.
+ *
  * @param comment Gets the BlockNodes that we use as flags.
  */
 export default function FlagsNode(
-  flags: TypeDoc.Models.ReflectionFlags,
-  comment?: TypeDoc.Models.Comment | undefined
+  reflection: TypeDoc.Models.Reflection
 ): string {
-  const BadgeBlocks: DocDocsConfiguration["CommentTagBadges"] = [];
-  return `${flags
-    .map((x) => {
-      const [BadgeString, BadgeInConfig] = GetFlagNodeBadge(x);
-      if (BadgeInConfig && BadgeInConfig.contentBlock !== undefined) {
-        BadgeBlocks.push(BadgeInConfig);
-      }
-      return BadgeString;
-    })
-    .join(" ")} ${
-    comment
-      ? comment.blockTags
-          .map((x) => {
-            const [BadgeString, BadgeInConfig] = GetFlagNodeBadge(x.tag);
-            if (BadgeInConfig && BadgeInConfig.contentBlock !== undefined) {
-              BadgeBlocks.push(BadgeInConfig);
-            }
-            return BadgeString;
-          })
-          .join(" ")
-      : ""
-  }
+  const flags = reflection.flags;
+  const blocktags = reflection.comment?.blockTags ?? [];
 
-  ${BadgeBlocks.map((x) => {
-    return `:::${x.contentBlock?.type} ${x.contentBlock?.title ?? ""}
-${x.contentBlock?.content}
-:::
-    `;
-  }).join("\n")}
-    `;
+  const InLineBadages: string[] = [];
+  const contentBlocksFromBadges: string[] = [];
+  flags.forEach((x) => {
+    const [BadgeString, BadgeInConfig] = GetFlagNodeBadge(x);
+    if (BadgeInConfig !== undefined && BadgeInConfig.noBadge !== true) {
+      InLineBadages.push(BadgeString);
+    }
+  });
+  blocktags.forEach((x) => {
+    const [BadgeString, BadgeInConfig] = GetFlagNodeBadge(x.tag);
+    if (BadgeInConfig !== undefined) {
+      if (BadgeInConfig.noBadge !== true) {
+        InLineBadages.push(BadgeString);
+      }
+      if (BadgeInConfig.contentBlock !== undefined) {
+        contentBlocksFromBadges.push(
+          admonition(
+            x.content.length > 9
+              ? CommentTagContentDisplayPartNode(x.content)
+              : typeof BadgeInConfig.contentBlock.content === "function"
+              ? BadgeInConfig.contentBlock.content(
+                  x,
+                  CommentTagContentDisplayPartNode(x.content)
+                )
+              : BadgeInConfig.contentBlock.content,
+            BadgeInConfig.contentBlock.type,
+            typeof BadgeInConfig.contentBlock.title === "function"
+              ? BadgeInConfig.contentBlock.title(
+                  x,
+                  CommentTagContentDisplayPartNode(x.content)
+                )
+              : BadgeInConfig.contentBlock.title
+          )
+        );
+      }
+    }
+  });
+
+  // console.log(
+  //   reflection.name,
+  //   flags,
+  //   blocktags,
+  //   reflection.comment?.modifierTags
+  // );
+  return page(
+    [InLineBadages.join(" ")],
+    [contentBlocksFromBadges.join(linebreak())]
+  );
+  // [
+  //   flags
+  //     .map((flag) => {
+  //       const [BadgeString, BadgeInConfig] = GetFlagNodeBadge(flag);
+  //       if (BadgeInConfig && BadgeInConfig.contentBlock !== undefined) {
+  //         BadgeBlocks.push(BadgeInConfig);
+  //       }
+  //       return BadgeString;
+  //     })
+  //     .join(" "),
+  // ],
+  // comment
+  //   ? [
+  //       comment.blockTags
+  //         .map((blocktag) => {
+  //           const [BadgeString, BadgeInConfig] = GetFlagNodeBadge(
+  //             blocktag.tag
+  //           );
+  //           if (BadgeInConfig && BadgeInConfig.contentBlock !== undefined) {
+  //             BadgeBlocks.push(BadgeInConfig);
+  //           }
+  //           return BadgeString;
+  //         })
+  //         .join(" "),
+  //     ]
+  //   : [],
+  // [
+  //   BadgeBlocks.map((x) => {
+  //     return admonition(
+  //       x.contentBlock?.content,
+  //       x.contentBlock?.type,
+  //       x.contentBlock?.title
+  //     );
+  //   }).join(linebreak()),
+  // ]
 }

@@ -3,6 +3,9 @@ import { Console } from "@mekstuff/logreport";
 import { program as CommanderProgrammer } from "commander";
 import { GetDocDocsConfigDir } from "../utils/core.js";
 
+/**
+  Commands
+ */
 export default function InitCommand(program: typeof CommanderProgrammer) {
   program.command("init").action(() => {
     if (fs.existsSync(GetDocDocsConfigDir())) {

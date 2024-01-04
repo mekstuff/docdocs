@@ -1,4 +1,5 @@
 packages:
   - 'cli'
   - 'front-end'
+  - 'docs'
   - 'tests/**'

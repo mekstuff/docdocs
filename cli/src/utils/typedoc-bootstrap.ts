@@ -3,6 +3,19 @@ import { GetDocDocsConfig, LoadDocDocsConfig } from "./core.js";
 import { Console } from "@mekstuff/logreport";
 import { GetLogForSourceConflict } from "./transpiler.js";
 
+let _CURRENT_TYPEDOC_PROJECT: TypeDoc.ProjectReflection;
+
+export function SetTypeDocProject(project: TypeDoc.ProjectReflection) {
+  _CURRENT_TYPEDOC_PROJECT = project;
+}
+/**
+ * Returns the `_CURRENT_TYPEDOC_PROJECT` if any, the `_CURRENT_TYPEDOC_PROJECT` is only made available after `SetTypeDocProject` initiated it
+ * for build/serve.
+ */
+export function GetTypeDocProject(): TypeDoc.ProjectReflection | undefined {
+  return _CURRENT_TYPEDOC_PROJECT;
+}
+
 /**
  * typedoc-plugin-rename-defaults
  * Source from https://github.com/felipecrs/typedoc-plugin-rename-defaults/blob/master/index.js
