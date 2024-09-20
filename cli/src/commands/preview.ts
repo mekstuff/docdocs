@@ -1,3 +1,7 @@
+/**
+ * Typed with ❤️ @ mekstuff
+ */
+
 import fs from "fs";
 import path from "path";
 import { program as CommanderProgrammer } from "commander";
@@ -64,5 +68,6 @@ export default function PreviewCommand(program: typeof CommanderProgrammer) {
         }
       );
       fs.rmSync(previewFolderPath, { recursive: true, force: true });
-    });
+    })
+    .description("Local preview of your documentation.");
 }

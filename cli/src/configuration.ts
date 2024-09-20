@@ -1,3 +1,7 @@
+/**
+ * Typed with ❤️ @ mekstuff
+ */
+
 import TypeDoc from "typedoc";
 import { UserConfig } from "vitepress";
 import { SupportedApiRoutes } from "./utils/core.js";
@@ -399,7 +403,7 @@ export const DefaultConfiguration: DocDocsConfiguration = {
     name: "DocDocs",
     text: "Build websites from your source code.",
     tagline:
-      "Simple, powerful, and fast. Meet the modern SSG framework you've always wanted.",
+      "Focus on developing and let DocDocs generate your API documenation for you!",
     actions: [
       { text: "Get Started", link: "/getting-started", theme: "brand" },
       {
@@ -427,7 +431,7 @@ export const DefaultConfiguration: DocDocsConfiguration = {
       },
       {
         icon: "❤️",
-        title: "Support DocDocs",
+        title: "Open Source",
         details:
           "DocDocs is an open source project, You can support it by making contributions to the development or through donations of any amount! Using DocDocs in itself is already a form of support so we thank you ❤️",
         link: "https://github.com/mekstuff/docdocs",

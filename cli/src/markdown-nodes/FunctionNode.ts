@@ -1,3 +1,7 @@
+/**
+ * Typed with ❤️ @ mekstuff
+ */
+
 import TypeDoc from "typedoc";
 import SignatureNode, {
   GithubStyledSignatureParameters,

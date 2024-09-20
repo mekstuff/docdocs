@@ -1,3 +1,7 @@
+/**
+ * Typed with ❤️ @ mekstuff
+ */
+
 import fs from "fs";
 import path from "path";
 import TypeDoc from "typedoc";
@@ -444,6 +448,12 @@ export function ReadViteUserConfig(directory: string): Promise<UserConfig> {
  */
 export function CompileViteUserConfig(directory: string): UserConfig {
   const DDC = GetDocDocsConfig();
+  const cwd = process.cwd();
+
+  const UserSpecifiedViteSettingsFolder = path.join(cwd, ".vitepress");
+  if (fs.existsSync(UserSpecifiedViteSettingsFolder)) {
+    console.log(cwd);
+  }
 
   // default values added to vite-userconfig
   // const themeConfig = DDC.ViteUserConfig.themeConfig ?? {};

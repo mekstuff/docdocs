@@ -1,3 +1,7 @@
+/**
+ * Typed with ❤️ @ mekstuff
+ */
+
 import TypeDoc from "typedoc";
 import CommentNode from "./CommentNode.js";
 import PropertyNode from "./PropertyNode.js";
@@ -8,9 +12,6 @@ import {
   linebreakWithDashes,
 } from "../markdown-components/linebreak.js";
 
-/**
- * Markdown of a function reflection.
- */
 export default function InterfaceNode(
   reflection: TypeDoc.Models.DeclarationReflection
 ): string {

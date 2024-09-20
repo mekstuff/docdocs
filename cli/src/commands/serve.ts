@@ -1,3 +1,7 @@
+/**
+ * Typed with ❤️ @ mekstuff
+ */
+
 const REFERENCE_LINK_TO_HOW_TO_KILL_WIN32_PROCESSES =
   "https://stackoverflow.com/questions/39632667/how-do-i-remove-the-process-currently-using-a-port-on-localhost-in-windows";
 // TODO: vitepress processes aren't closed whenever an error occurs with config compiling.
@@ -183,7 +187,10 @@ export default function ServeCommand(program: typeof CommanderProgrammer) {
           resolve();
         });
       });
-    });
+    })
+    .description(
+      "Runs your documentation in development mode, detecting and rebuilding whenever you make changes."
+    );
 }
 
 type LogServerStartedData = Partial<{

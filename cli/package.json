@@ -38,15 +38,6 @@
     "typescript": "^5.1.3",
     "vitepress": "^1.0.0-rc.22"
   },
-  "local": {
-    "dependencies": {
-      "@mekstuff/logreport": [
-        "^1.0.0",
-        "import",
-        "traverse-imports"
-      ]
-    }
-  },
   "peerDependencies": {
     "vitepress": "^1.0.0-rc.22"
   }

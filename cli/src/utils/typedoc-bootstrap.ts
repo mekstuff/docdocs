@@ -1,3 +1,7 @@
+/**
+ * Typed with ❤️ @ mekstuff
+ */
+
 import TypeDoc, { Converter } from "typedoc";
 import { GetDocDocsConfig, LoadDocDocsConfig } from "./core.js";
 import { Console } from "@mekstuff/logreport";

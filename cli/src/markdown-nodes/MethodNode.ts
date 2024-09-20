@@ -1,3 +1,7 @@
+/**
+ * Typed with ❤️ @ mekstuff
+ */
+
 import TypeDoc from "typedoc";
 import SignatureNode, {
   GithubStyledSignatureParameters,
@@ -12,9 +16,6 @@ import FlagsNode from "./FlagsNode.js";
 import { UNICODE_WARNING_SYMBOL } from "../CONSTANTS.js";
 import ExampleBlockNode from "./ExampleBlockNode.js";
 
-/**
- * Markdown of a class reflection.
- */
 export default function MethodNode(
   reflection: TypeDoc.Models.DeclarationReflection
 ): string {

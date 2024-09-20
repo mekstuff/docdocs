@@ -1,3 +1,7 @@
+/**
+ * Typed with ❤️ @ mekstuff
+ */
+
 import TypeDoc from "typedoc";
 import { INHERITANCE_EMOJI } from "../CONSTANTS.js";
 import { sup } from "../markdown-components/sup.js";

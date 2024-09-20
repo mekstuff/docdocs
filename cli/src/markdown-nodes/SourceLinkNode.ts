@@ -1,3 +1,7 @@
+/**
+ * Typed with ❤️ @ mekstuff
+ */
+
 import TypeDoc from "typedoc";
 import { GetDocDocsConfig } from "../utils/core.js";
 import { sup } from "../markdown-components/sup.js";

@@ -1,3 +1,7 @@
+/**
+ * Typed with ❤️ @ mekstuff
+ */
+
 import TypeDoc from "typedoc";
 import CommentNode from "./CommentNode.js";
 import FlagsNode from "./FlagsNode.js";
@@ -30,7 +34,7 @@ export default function PropertyNode(
             ? [InheritedFromNode(reflection.inheritedFrom)]
             : []
         ),
-        "tip",
+        "info",
         reflection.parent?.name +
           "." +
           reflection.name +

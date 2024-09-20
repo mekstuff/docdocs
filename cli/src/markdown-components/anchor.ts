@@ -1,6 +1,3 @@
-/**
-  Markdown Components
- */
 export function anchor(
   body?: unknown,
   href?: string,

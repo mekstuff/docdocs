@@ -1,3 +1,7 @@
+/**
+ * Typed with ❤️ @ mekstuff
+ */
+
 import TypeDoc from "typedoc";
 import TypeNode from "./TypeNode.js";
 import { UNICODE_WARNING_SYMBOL } from "../CONSTANTS.js";
@@ -8,6 +12,8 @@ import { page } from "../markdown-components/page.js";
 import { codeblock } from "../markdown-components/codeblock.js";
 import { sup } from "../markdown-components/sup.js";
 import typeParameterNode from "./TypeParameterNode.js";
+
+export const SpecialUnionSeperator = "｜";
 
 /**
  * Markdown of a signature reflection.
@@ -42,6 +48,17 @@ export default function SignatureNode(
   ]);
 }
 
+export function GithubStyledTable(headings: string[], content: string[][]) {
+  const headingssStr = "| " + headings.join(" | ") + " | " + "\n";
+  const headingsSplitters = "|" + headings.map(() => " - |").join("");
+  const contentsStr = content
+    .map((contents) => {
+      return "|" + contents.map((content) => ` ${content} |`).join("");
+    })
+    .join("\n");
+  return `${headingssStr}${headingsSplitters}\n${contentsStr}`;
+}
+
 /**
  * Creates a github styled table based on signature parameters
  */
@@ -70,7 +87,9 @@ export function GithubStyledSignatureParameters(
             (x) =>
               x.name +
               " | " +
-              (x.type ? TypeNode(x.type, "｜", true) : UNICODE_WARNING_SYMBOL) +
+              (x.type
+                ? TypeNode(x.type, SpecialUnionSeperator, true)
+                : UNICODE_WARNING_SYMBOL) +
               " | " +
               (x.comment ? CommentNode(x.comment) : "-") +
               " | " +

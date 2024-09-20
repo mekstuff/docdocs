@@ -1,15 +1,29 @@
+/**
+ * Typed with ❤️ @ mekstuff
+ */
+
 // TODO: Adding support for internal reference types that aren't exported to be displayed under a ## Types header at the top of the page
 // Logic exists inside `src/utils/core` but has problems, view file for more information.
 
 // TODO: Add reflection support,reflections will be e.g. const x: { a: ... }
 
-import TypeDoc from "typedoc";
+import TypeDoc, { SomeType } from "typedoc";
 import { UNICODE_WARNING_SYMBOL } from "../CONSTANTS.js";
 import { GetDocDocsConfig } from "../utils/core.js";
 import { Console } from "@mekstuff/logreport";
 import { ReferenceDocDocsConfigurationPath } from "../configuration.js";
 import { anchor } from "../markdown-components/anchor.js";
 import { GetTypeDocProject } from "../utils/typedoc-bootstrap.js";
+import { codeblock } from "../markdown-components/codeblock.js";
+import { page } from "../markdown-components/page.js";
+import { GithubStyledTable, SpecialUnionSeperator } from "./SignatureNode.js";
+import { h1 } from "../markdown-components/heading.js";
+import CommentNode from "./CommentNode.js";
+import {
+  linebreak,
+  linebreakWithDashes,
+} from "../markdown-components/linebreak.js";
+import PropertyNode from "./PropertyNode.js";
 
 type TNode = {
   text: string;
@@ -43,7 +57,10 @@ function ArrayType(Type: TypeDoc.ArrayType): TNode {
 export default function TypeNode(
   Type: TypeDoc.SomeType,
   unionSeperator?: string,
-  asAnchorTag?: boolean
+  asAnchorTag?: boolean,
+  _refTypeDepth: number = 1,
+  _refTypeContents?: { n: string; node: string }[],
+  _refTypeParentName?: string
 ): string {
   const returnAsAnchorOrNot = (Default: string, AsAnchor?: string): string => {
     return asAnchorTag ? AsAnchor ?? Default : Default;
@@ -89,13 +106,24 @@ export default function TypeNode(
         return `${UNICODE_WARNING_SYMBOL} The TypeDoc project has not yet be initiated or was removed ${UNICODE_WARNING_SYMBOL}`;
       }
       if (TDProject.name === Type.package) {
-        // the type was defined but was not exported, display it at the top of the page
         return returnAsAnchorOrNot(
-          `SUPPORT FOR TYPES LISTED AT TOP IS WIP. ${UNICODE_WARNING_SYMBOL}`
-          // Type.toString(),
-          // vueonce(`{{ AddTypeDefinitionToPage("${codeblock("hello")}") }}`) +
-          //   Type.toString()
+          `${Type.name}🔒`,
+          `${Type.name} <DBadge text="private" emoji="🔒"/>`
         );
+        // console.log(Type.fromObject(new TypeDoc.Deserializer(GetTypeDocApplication())))
+        // the type was defined but was not exported, display it at the top of the page
+        // vueonce(`{{ AddTypeDefinitionToPage("x") }}`)
+        // return returnAsAnchorOrNot(
+        //   // Type.toString(),
+        //   // FromTNodeToAnchor({
+        //   //   text: Type.toString(),
+        //   //   href: `#${Type.toString()}`
+        //   // })
+        //   `SUPPORT FOR TYPES LISTED AT TOP IS WIP. ${UNICODE_WARNING_SYMBOL}`
+        //   // Type.toString(),
+        //   // vueonce(`{{ AddTypeDefinitionToPage("${codeblock("hello")}") }}`) +
+        //   //   Type.toString()
+        // );
       }
       // reference is detected as external.
       const DDConfig = GetDocDocsConfig();
@@ -140,28 +168,56 @@ export default function TypeNode(
   }
   //
   if (Type.type === "reflection") {
-    // const resolveDeclarationString = (
-    //   declaration: TypeDoc.DeclarationReflection
-    // ): string => {
-    //   return declaration.type
-    //     ? `${declaration.name}: ${TypeNode(
-    //         declaration.type,
-    //         unionSeperator,
-    //         asAnchorTag
-    //       )}`
-    //     : declaration.children
-    //     ? `{${linebreak()}` +
-    //       declaration.children
-    //         .map((decl) => {
-    //           return "\t" + resolveDeclarationString(decl);
-    //         })
-    //         .join("," + linebreak()) +
-    //       `${linebreak()}}${linebreak()}`
-    //     : "err";
-    // };
-    // return resolveDeclarationString(Type.declaration);
-    // };
-    return `SUPPORT FOR REFLECTIONS ARE WIP. ${UNICODE_WARNING_SYMBOL}`;
+    _refTypeContents = _refTypeContents ?? [];
+    const str =
+      Type.declaration.children
+        ?.map((child) => {
+          if (!child.type) {
+            return;
+          }
+          if ((child.type as SomeType).type !== "reflection") {
+            _refTypeContents?.push({
+              n: `${
+                _refTypeParentName !== undefined ? `${_refTypeParentName}.` : ""
+              }${child.name}`,
+              node: TypeNode(child.type, SpecialUnionSeperator, true),
+            });
+          }
+          return `${"\t".repeat(_refTypeDepth)}${child.name}: ${TypeNode(
+            child.type,
+            undefined,
+            undefined,
+            _refTypeDepth + 1,
+            _refTypeContents,
+            (_refTypeParentName !== undefined ? _refTypeParentName + "." : "") +
+              child.name
+          )}`;
+        })
+        .filter(Boolean)
+        .join(",\n") ?? "";
+
+    let returning = returnAsAnchorOrNot(
+      `{\n${str}\n${"\t".repeat(_refTypeDepth - 1)}}`,
+      page(
+        [Type.declaration.name],
+        [codeblock(`type ${Type.declaration} = {\n${str}\n}`, "ts")]
+      )
+    );
+    if (asAnchorTag && _refTypeDepth === 1) {
+      const GroupedByTypes: Record<string, string[]> = {};
+      _refTypeContents.forEach((x) => {
+        GroupedByTypes[x.node] = GroupedByTypes[x.node] || [];
+        GroupedByTypes[x.node].push(x.n);
+      });
+      const _references = [];
+      for (const x in GroupedByTypes) {
+        const t = GroupedByTypes[x];
+        _references.push([t.join(SpecialUnionSeperator), x]);
+      }
+      returning =
+        returning + "\n" + GithubStyledTable(["Key", "Type"], _references);
+    }
+    return returning;
   }
   if (Type.type === "union") {
     return Type.types
@@ -271,5 +327,10 @@ export default function TypeNode(
 export function TypeAliasNode(
   reflection: TypeDoc.Models.DeclarationReflection
 ): string {
-  return reflection.type ? TypeNode(reflection.type) : "";
+  return page(
+    [h1(reflection.name)],
+    reflection.comment ? [CommentNode(reflection.comment)] : [],
+    [linebreakWithDashes()],
+    [PropertyNode(reflection)]
+  );
 }

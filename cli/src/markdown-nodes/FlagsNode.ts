@@ -1,3 +1,7 @@
+/**
+ * Typed with ❤️ @ mekstuff
+ */
+
 // TODO: Unknown flags aren't captured by typedoc for functions, only works for classes, will need to implement.
 
 import TypeDoc from "typedoc";

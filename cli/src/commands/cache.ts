@@ -1,3 +1,7 @@
+/**
+ * Typed with ❤️ @ mekstuff
+ */
+
 import fs from "fs";
 import { Console } from "@mekstuff/logreport";
 import { program as CommanderProgrammer } from "commander";
@@ -14,7 +18,8 @@ export default function CacheCommand(program: typeof CommanderProgrammer) {
     .alias("list")
     .action(() => {
       Console.log(GetDocDocsRootCacheDirectory());
-    });
+    })
+    .description("Clear and list cache directory.");
   cacheCommand.command("clear").action(() => {
     const dir = GetDocDocsRootCacheDirectory();
     Console.info("Clearing cache...");

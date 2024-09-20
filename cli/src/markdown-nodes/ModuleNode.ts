@@ -1,3 +1,7 @@
+/**
+ * Typed with ❤️ @ mekstuff
+ */
+
 import TypeDoc from "typedoc";
 import FlagsNode from "./FlagsNode.js";
 import { SupportedApiRoutes } from "../utils/core.js";
@@ -6,9 +10,6 @@ import { page } from "../markdown-components/page.js";
 import { h1 } from "../markdown-components/heading.js";
 import { admonition } from "../markdown-components/admonition.js";
 
-/**
- * Markdown of a variable reflection.
- */
 export default function ModuleNode(
   reflection: TypeDoc.Models.DeclarationReflection
 ): string {

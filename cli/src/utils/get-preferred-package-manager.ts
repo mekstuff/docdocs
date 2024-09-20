@@ -1,3 +1,7 @@
+/**
+ * Typed with ❤️ @ mekstuff
+ */
+
 import fs from "fs";
 import path from "path";
 import { Console } from "@mekstuff/logreport";

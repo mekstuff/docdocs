@@ -1,3 +1,7 @@
+/**
+ * Typed with ❤️ @ mekstuff
+ */
+
 import TypeDoc from "typedoc";
 import FlagsNode from "./FlagsNode.js";
 import CommentNode from "./CommentNode.js";

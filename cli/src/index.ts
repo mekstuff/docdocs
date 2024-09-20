@@ -1,5 +1,24 @@
 #!/usr/bin/env node
 
+/**
+ * Made with ❤️ @ mekstuff
+ *
+ * DocDocs enables developers to focus on developing by automatically generating api documenation and trying its best to make the documentation
+ * process alot less time consuming.
+ *
+ * Checkout the latest source
+ * - https://github.com/mekstuff/docdocs
+ *
+ * Checkout mekstuff!
+ *  - https://mekstuff.com
+ *  - twitter (X) @mekstuff
+ *  - discord @mekstuff
+ *  - everywhere @mekstuff
+ *
+ *  ❤️ Have a great rest of your day/afternoon/evening/night ❤️
+ *
+ */
+
 import ServeCommand from "./commands/serve.js";
 import BuildCommand from "./commands/build.js";
 import CacheCommand from "./commands/cache.js";

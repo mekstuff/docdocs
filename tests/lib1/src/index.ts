@@ -1,46 +1,41 @@
-export class Test {
-	/**
-	 * display `this` inline along with `this part`
-	 * ```ts
-	 * const x = true;
-	 * ```
-	 *
-	 * WTF `lo`
-	 *
-	 * ``lol``
-	 */
-	test: string = "";
 
-	/**
-	 * @param param0 This part does that part
-	 * @returns Hello world
-	 */
-	test2(param0: string, param1: number): string | undefined {
-		return;
-	}
+type TestType = {
+	Arg0: string
 }
-export class Test2 {
-	/**
-	 * display `this` inline along with `this part`
-	 * ```ts
-	 * const x = true;
-	 * ```
-	 *
-	 * WTF `lo`
-	 *
-	 * ``lol``
-	 */
-	test: string = "";
 
-	/**
-	 * @param param0 This part does that part
-	 * @returns Hello world
-	 */
-	test2(param0: string, param1: number): string | undefined {
-		return;
+export class Randomness {
+	constructor(public readonly SaltEnabled: boolean){
 	}
 }
 
-export function Hello(): Instance {
-	return undefined as never;
-}
+// export class X {
+// 	T!: TestType
+// }
+
+// export interface RigidBody<T extends number> {
+// 	X: {}
+//  }
+
+//  export type ScopeSing = {
+// 	Callback: ()=>void
+//  }
+
+// export class TestClass {
+// 	Q!: {
+// 	}
+// 	// Inherits: boolean | string = false
+// 	// GetSample(arg0: boolean, arg1: number | string, argq: string | boolean | undefined | false) {}
+// }
+
+// export class ABC {
+// 	// public TT: TestType = {
+// 	// 	Arg0: "s"
+// 	// }
+// 	// private Call(){
+// 	// 	return true;
+// 	// }
+// 	private Text = 1
+// 	// public G: X = X
+// 	constructor(){
+// 	}
+// }

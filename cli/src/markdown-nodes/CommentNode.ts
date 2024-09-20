@@ -1,3 +1,7 @@
+/**
+ * Typed with ❤️ @ mekstuff
+ */
+
 import TypeDoc from "typedoc";
 import { page } from "../markdown-components/page.js";
 import { linebreak } from "../markdown-components/linebreak.js";

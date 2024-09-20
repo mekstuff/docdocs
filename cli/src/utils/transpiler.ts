@@ -1,3 +1,7 @@
+/**
+ * Typed with ❤️ @ mekstuff
+ */
+
 import fs from "fs";
 import TypeDoc from "typedoc";
 import ClassNode from "../markdown-nodes/ClassNode.js";

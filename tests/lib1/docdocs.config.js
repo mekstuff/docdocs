@@ -3,6 +3,11 @@ import { Config, GetDefaultConfigValue } from "@mekstuff/docdocs";
 
 // prettier-ignore
 export default Config({
+    HomePageConfiguration: {
+        ...GetDefaultConfigValue("HomePageConfiguration"),
+        name: "My First Docs",
+        text: "This is my first documentation!"
+    },
     ViteUserConfig: {
         ...GetDefaultConfigValue("ViteUserConfig"),
         themeConfig: {
